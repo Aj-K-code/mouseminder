@@ -1,0 +1,15 @@
+{
+  "sensitivity": "medium",
+  "timeouts": {
+    "short": 5,
+    "long": 15
+  },
+  "messages": [
+    "Chill out!",
+    "Focus, padawan!",
+    "Stop the wiggle!",
+    "Productivity police: You're under arrest!"
+  ],
+  "enable_sound": false,
+  "whitelist": []
+}
