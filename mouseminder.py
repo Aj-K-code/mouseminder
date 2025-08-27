@@ -91,6 +91,10 @@ class MouseMinder:
             self.drag_to_center()
             return
 
+        # Debug output for every movement
+        if self.debug:
+            print(f"Mouse moved to: ({x}, {y})")
+
         current_time = time.time()
         dx = x - self.last_mouse_position[0]
         dy = y - self.last_mouse_position[1]
@@ -220,9 +224,14 @@ class MouseMinder:
         print("MouseMinder started. Monitoring mouse movements...")
         print(f"Screen size: {self.screen_width}x{self.screen_height}")
         print("Config: sensitivity=high, fidget threshold=5")
+        
+        # Debug output for listeners
+        print("Starting mouse listener...")
         self.mouse_listener.start()
+        print("Starting keyboard listener...")
         self.keyboard_listener.start()
-
+        print("Listeners started.")
+        
         try:
             # Keep the main thread alive
             while True:
