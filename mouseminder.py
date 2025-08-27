@@ -2,11 +2,10 @@ import json
 import time
 import threading
 from pynput import mouse, keyboard
-import tkinter as tk
-from tkinter import messagebox
 import os
 import sys
 import random
+import subprocess
 
 class MouseMinder:
     def __init__(self, config_path='config.json'):
@@ -25,6 +24,9 @@ class MouseMinder:
         # For dragging the mouse
         self.mouse_controller = mouse.Controller()
         
+        # Debug mode
+        self.debug = True
+        
         # Initialize listeners
         self.mouse_listener = mouse.Listener(on_move=self.on_move, on_click=self.on_click)
         self.keyboard_listener = keyboard.Listener(on_press=self.on_key_press)
@@ -32,21 +34,23 @@ class MouseMinder:
     def update_screen_dimensions(self):
         """Get the current screen dimensions."""
         try:
-            # For Linux, we can try to get dimensions using tkinter
-            root = tk.Tk()
-            root.withdraw()  # Hide the main window
-            self.screen_width = root.winfo_screenwidth()
-            self.screen_height = root.winfo_screenheight()
-            root.destroy()
+            # For Linux, we can try to get dimensions using xrandr
+            output = subprocess.check_output(['xrandr']).decode('utf-8')
+            for line in output.split('
+'):
+                if '*' in line:  # Current resolution line
+                    resolution = line.split()[0]  # e.g., "1920x1080"
+                    self.screen_width, self.screen_height = map(int, resolution.split('x'))
+                    return
         except Exception as e:
             print(f"Could not determine screen size, using defaults: {e}")
 
     def load_config(self, config_path):
         default_config = {
-            "sensitivity": "medium",
+            "sensitivity": "high",  # Make it more sensitive by default
             "timeouts": {
-                "short": 5,
-                "long": 15
+                "short": 3,  # Shorter timeouts for testing
+                "long": 10
             },
             "messages": [
                 "Chill out!",
@@ -76,11 +80,11 @@ class MouseMinder:
         # Define thresholds for different sensitivity levels
         # Lower threshold means more sensitive
         sensitivity_map = {
-            "low": 2.0,
-            "medium": 1.0,
+            "low": 3.0,
+            "medium": 1.5,
             "high": 0.5
         }
-        return sensitivity_map.get(self.config["sensitivity"], 1.0)
+        return sensitivity_map.get(self.config["sensitivity"], 0.5)
 
     def on_move(self, x, y):
         if self.is_locked:
@@ -93,26 +97,38 @@ class MouseMinder:
         dy = y - self.last_mouse_position[1]
         distance = (dx**2 + dy**2)**0.5
 
+        # Debug output
+        if self.debug:
+            print(f"Movement: dx={dx:.2f}, dy={dy:.2f}, distance={distance:.2f}")
+
         # Check if movement is significant
         if distance > 1: # Minimum pixel movement to consider
             time_diff = current_time - self.last_movement_time
             # If moved recently, it might be fidgeting
-            if time_diff < 0.5: # Time window to consider fidgeting
+            if time_diff < 1.0: # Increased time window to consider fidgeting
                 self.fidget_score += 1 * self.get_sensitivity_threshold()
+                if self.debug:
+                    print(f"Fidget score increased: {self.fidget_score:.2f}")
             else:
                 # Reset score if there was a pause
                 self.fidget_score = max(0, self.fidget_score - 0.5)
+                if self.debug:
+                    print(f"Fidget score decreased: {self.fidget_score:.2f}")
 
             self.last_movement_time = current_time
             self.last_mouse_position = (x, y)
 
             # Check if fidget score is high enough to trigger action
-            if self.fidget_score > 10:
+            if self.fidget_score > 5:  # Lowered threshold for testing
+                if self.debug:
+                    print("Fidget threshold reached!")
                 self.trigger_timeout()
 
     def on_click(self, x, y, button, pressed):
         if pressed:
             # Reset fidget score on click
+            if self.debug:
+                print("Click detected, resetting fidget score")
             self.fidget_score = 0
             self.last_movement_time = time.time()
             self.last_mouse_position = (x, y)
@@ -123,6 +139,8 @@ class MouseMinder:
 
     def on_key_press(self, key):
         # Reset fidget score on key press
+        if self.debug:
+            print("Key press detected, resetting fidget score")
         self.fidget_score = 0
         self.last_movement_time = time.time()
 
@@ -134,9 +152,9 @@ class MouseMinder:
         # Get current position
         current_x, current_y = self.mouse_controller.position
         
-        # Calculate new position (move 5% of the distance to center each time)
-        new_x = current_x + (center_x - current_x) * 0.05
-        new_y = current_y + (center_y - current_y) * 0.05
+        # Calculate new position (move 10% of the distance to center each time for faster movement)
+        new_x = current_x + (center_x - current_x) * 0.1
+        new_y = current_y + (center_y - current_y) * 0.1
         
         # Move the mouse
         self.mouse_controller.position = (new_x, new_y)
@@ -179,22 +197,15 @@ class MouseMinder:
         timeout_thread.start()
 
     def show_warning(self):
-        # Simple warning message
-        root = tk.Tk()
-        root.withdraw() # Hide the main window
-        messagebox.showwarning("MouseMinder", "Fidgeting detected! Please be still.")
-        root.destroy()
+        # Simple warning message in console
+        print("\n⚠️  Fidgeting detected! Please be still.")
 
     def show_message(self):
-        # Simple message box for now
+        # Simple message in console
         message = f"Timeout! {self.timeout_duration} seconds. Offense #{self.offense_count}"
         if self.config["messages"]:
             message += f"\n{random.choice(self.config['messages'])}"
-
-        root = tk.Tk()
-        root.withdraw()
-        messagebox.showinfo("MouseMinder", message)
-        root.destroy()
+        print(f"\n{message}")
 
     def handle_timeout(self):
         while self.is_locked and (time.time() - self.lock_start_time) < self.timeout_duration:
@@ -209,6 +220,7 @@ class MouseMinder:
     def start(self):
         print("MouseMinder started. Monitoring mouse movements...")
         print(f"Screen size: {self.screen_width}x{self.screen_height}")
+        print("Config: sensitivity=high, fidget threshold=5")
         self.mouse_listener.start()
         self.keyboard_listener.start()
 

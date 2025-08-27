@@ -1,8 +1,8 @@
 {
-  "sensitivity": "medium",
+  "sensitivity": "high",
   "timeouts": {
-    "short": 5,
-    "long": 15
+    "short": 3,
+    "long": 10
   },
   "messages": [
     "Chill out!",
