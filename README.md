@@ -2,6 +2,10 @@
 
 A fun tool to help you stop fidgeting with your mouse. If you move your mouse too much without clicking, MouseMinder will give you a playful warning and repeatedly drag your cursor towards the center of the screen for a timeout, showing a random emoji as feedback.
 
+**Note:** This application works differently depending on your desktop environment:
+- On X11, it uses event listeners for immediate detection
+- On Wayland (default in Ubuntu 22.04+), it uses polling due to security restrictions
+
 ## Features
 
 -   Detects excessive mouse movement without clicking.
@@ -9,7 +13,6 @@ A fun tool to help you stop fidgeting with your mouse. If you move your mouse to
 -   Repeatedly drags the mouse cursor towards the center of the screen during timeout.
 -   Tiered timeout system (warning, short lock, long lock).
 -   Customizable sensitivity, timeout durations, and messages via `config.json`.
--   Cross-platform support (Windows, macOS, Linux).
 
 ## Installation & Usage
 
@@ -23,7 +26,7 @@ A fun tool to help you stop fidgeting with your mouse. If you move your mouse to
 1.  **Clone the repository:**
 
     ```bash
-    git clone https://github.com/yourusername/mouseminder.git
+    git clone https://github.com/Aj-K-code/mouseminder.git
     cd mouseminder
     ```
 
@@ -47,8 +50,14 @@ A fun tool to help you stop fidgeting with your mouse. If you move your mouse to
 
 4.  **Run the application:**
 
+    For X11 sessions:
     ```bash
     python3 mouseminder.py
+    ```
+
+    For Wayland sessions (default in Ubuntu 22.04+):
+    ```bash
+    python3 mouseminder_wayland.py
     ```
 
     The application will start monitoring your mouse movements. 
@@ -65,8 +74,6 @@ You can customize MouseMinder's behavior by editing the `config.json` file:
 -   Adjust sensitivity (`low`, `medium`, `high`)
 -   Set timeout durations (in seconds)
 -   Customize messages displayed in pop-ups
--   Enable/disable sound effects (not yet implemented)
--   Add applications to a whitelist (not yet implemented)
 
 See `config.json` for the default settings and `docs/CONFIGURATION.md` for more details.
 
