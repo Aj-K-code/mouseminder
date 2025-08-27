@@ -86,46 +86,50 @@ class MouseMinder:
         return sensitivity_map.get(self.config["sensitivity"], 0.5)
 
     def on_move(self, x, y):
-        if self.is_locked:
-            # Continue dragging to center during lock
-            self.drag_to_center()
-            return
+        try:
+            if self.is_locked:
+                # Continue dragging to center during lock
+                self.drag_to_center()
+                return
 
-        # Debug output for every movement
-        if self.debug:
-            print(f"Mouse moved to: ({x}, {y})")
+            # Debug output for every movement
+            if self.debug:
+                print(f"Mouse moved to: ({x}, {y})")
 
-        current_time = time.time()
-        dx = x - self.last_mouse_position[0]
-        dy = y - self.last_mouse_position[1]
-        distance = (dx**2 + dy**2)**0.5
+            current_time = time.time()
+            dx = x - self.last_mouse_position[0]
+            dy = y - self.last_mouse_position[1]
+            distance = (dx**2 + dy**2)**0.5
 
-        # Debug output
-        if self.debug:
-            print(f"Movement: dx={dx:.2f}, dy={dy:.2f}, distance={distance:.2f}")
+            # Debug output
+            if self.debug:
+                print(f"Movement: dx={dx:.2f}, dy={dy:.2f}, distance={distance:.2f}")
 
-        # Check if movement is significant
-        if distance > 1: # Minimum pixel movement to consider
-            time_diff = current_time - self.last_movement_time
-            # If moved recently, it might be fidgeting
-            if time_diff < 1.0: # Increased time window to consider fidgeting
-                self.fidget_score += 1 * self.get_sensitivity_threshold()
-                if self.debug:
-                    print(f"Fidget score increased: {self.fidget_score:.2f}")
-            else:
-                # Reset score if there was a pause
-                self.fidget_score = max(0, self.fidget_score - 0.5)
-                if self.debug:
-                    print(f"Fidget score decreased: {self.fidget_score:.2f}")
+            # Check if movement is significant
+            if distance > 1: # Minimum pixel movement to consider
+                time_diff = current_time - self.last_movement_time
+                # If moved recently, it might be fidgeting
+                if time_diff < 1.0: # Increased time window to consider fidgeting
+                    self.fidget_score += 1 * self.get_sensitivity_threshold()
+                    if self.debug:
+                        print(f"Fidget score increased: {self.fidget_score:.2f}")
+                else:
+                    # Reset score if there was a pause
+                    self.fidget_score = max(0, self.fidget_score - 0.5)
+                    if self.debug:
+                        print(f"Fidget score decreased: {self.fidget_score:.2f}")
 
-            self.last_movement_time = current_time
-            self.last_mouse_position = (x, y)
+                self.last_movement_time = current_time
+                self.last_mouse_position = (x, y)
 
-            # Check if fidget score is high enough to trigger action
-            if self.fidget_score > 5:  # Lowered threshold for testing
-                if self.debug:
-                    print("Fidget threshold reached!")
-                self.trigger_timeout()
+                # Check if fidget score is high enough to trigger action
+                if self.fidget_score > 5:  # Lowered threshold for testing
+                    if self.debug:
+                        print("Fidget threshold reached!")
+                    self.trigger_timeout()
+        except Exception as e:
+            if self.debug:
+                print(f"Error in on_move: {e}")
 
     def on_click(self, x, y, button, pressed):
         if pressed:
@@ -225,13 +229,17 @@ class MouseMinder:
         print(f"Screen size: {self.screen_width}x{self.screen_height}")
         print("Config: sensitivity=high, fidget threshold=5")
         
-        # Debug output for listeners
-        print("Starting mouse listener...")
-        self.mouse_listener.start()
-        print("Starting keyboard listener...")
-        self.keyboard_listener.start()
-        print("Listeners started.")
-        
+        try:
+            # Debug output for listeners
+            print("Starting mouse listener...")
+            self.mouse_listener.start()
+            print("Starting keyboard listener...")
+            self.keyboard_listener.start()
+            print("Listeners started.")
+        except Exception as e:
+            print(f"Error starting listeners: {e}")
+            return
+
         try:
             # Keep the main thread alive
             while True:
@@ -240,6 +248,8 @@ class MouseMinder:
             print("\nStopping MouseMinder...")
             self.mouse_listener.stop()
             self.keyboard_listener.stop()
+        except Exception as e:
+            print(f"Error in main loop: {e}")
 
 if __name__ == "__main__":
     app = MouseMinder()
