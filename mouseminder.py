@@ -36,8 +36,7 @@ class MouseMinder:
         try:
             # For Linux, we can try to get dimensions using xrandr
             output = subprocess.check_output(['xrandr']).decode('utf-8')
-            for line in output.split('
-'):
+            for line in output.split('\n'):
                 if '*' in line:  # Current resolution line
                     resolution = line.split()[0]  # e.g., "1920x1080"
                     self.screen_width, self.screen_height = map(int, resolution.split('x'))
